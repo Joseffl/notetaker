@@ -2,16 +2,27 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { auth } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION!,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!
+function getS3Client() {
+    const region = process.env.AWS_REGION
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
+
+    if (!region || !accessKeyId || !secretAccessKey) {
+        throw new Error('AWS S3 environment variables are not fully set')
     }
-})
+
+    return new S3Client({
+        region,
+        credentials: {
+            accessKeyId,
+            secretAccessKey
+        }
+    })
+}
 
 export async function POST(request: NextRequest) {
     try {
+        const s3Client = getS3Client()
         const { userId } = await auth()
         if (!userId) {
             return NextResponse.json({ error: 'unautorized' }, { status: 401 })
@@ -29,8 +40,14 @@ export async function POST(request: NextRequest) {
 
         const buffer = Buffer.from(await file.arrayBuffer())
 
+        const bucketName = process.env.S3_BUCKET_NAME
+
+        if (!bucketName) {
+            throw new Error('S3_BUCKET_NAME is not set')
+        }
+
         const uploadCommand = new PutObjectCommand({
-            Bucket: process.env.S3_BUCKET_NAME!,
+            Bucket: bucketName,
             Key: fileName,
             Body: buffer,
             ContentType: file.type
@@ -38,7 +55,7 @@ export async function POST(request: NextRequest) {
 
         await s3Client.send(uploadCommand)
 
-        const publicUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`
+        const publicUrl = `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`
 
         return NextResponse.json({
             success: true,

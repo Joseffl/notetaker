@@ -15,16 +15,26 @@ interface EmailData {
     meetingDate: string
 }
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD
+function getTransporter() {
+    const user = process.env.GMAIL_USER
+    const pass = process.env.GMAIL_APP_PASSWORD
+
+    if (!user || !pass) {
+        throw new Error('GMAIL_USER and GMAIL_APP_PASSWORD must be set')
     }
-})
+
+    return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user,
+            pass
+        }
+    })
+}
 
 export async function sendMeetingSummaryEmail(data: EmailData) {
     try {
+        const transporter = getTransporter()
         const emailHtml = await render(
             <MeetingSummaryEmailNew
                 userName={data.userName}

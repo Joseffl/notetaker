@@ -2,7 +2,12 @@ import crypto from 'crypto'
 
 
 export function verifySlackSignature(body: string, signature: string, timestamp: string) {
-    const signingSecret = process.env.SLACK_SIGNING_SECRET!
+    const signingSecret = process.env.SLACK_SIGNING_SECRET
+
+    if (!signingSecret) {
+        throw new Error('SLACK_SIGNING_SECRET is not set')
+    }
+
     const time = Math.floor(new Date().getTime() / 1000)
 
     if (Math.abs(time - parseInt(timestamp)) > 300) {
