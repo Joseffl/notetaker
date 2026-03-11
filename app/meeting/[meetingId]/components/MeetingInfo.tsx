@@ -1,6 +1,6 @@
 'use client'
 
-import { useUser } from '@clerk/nextjs'
+import { useUser } from '@/lib/auth-client'
 import React from 'react'
 
 interface MeetingData {

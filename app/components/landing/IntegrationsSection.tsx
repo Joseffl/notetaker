@@ -2,10 +2,7 @@ import Image from 'next/image'
 import React from 'react'
 
 const integrations = [
-    { name: "Slack", image: "slack.png" },
-    { name: "Asana", image: "asana.png" },
-    { name: "Jira", image: "jira.png" },
-    { name: "Trello", image: "trello.png" },
+    { name: "Google Meet", image: "gcal.png" },
     { name: "Google Calendar", image: "gcal.png" }
 ]
 
@@ -21,7 +18,7 @@ function IntegrationsSection() {
                         </span>
                     </h2>
                     <p className="text-lg bg-gradient-to-r from-gray-300 to-gray-500 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(156,163,175,0.3)]">
-                        Connect with the tools you aldready use and love
+                        Focused on Google Meet workflow for personal use
                     </p>
                 </div>
                 <div className='flex flex-wrap justify-center items-center gap-8 md:gap-12'>

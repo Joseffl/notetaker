@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { error } from "console";
 import { NextResponse } from "next/server";
 import { connected } from "process";

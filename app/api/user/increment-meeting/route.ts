@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { canUserChat, incrementChatUsage, incrementMeetingUsage } from "@/lib/usage";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { error } from "console";
 import { NextRequest, NextResponse } from "next/server";
 

@@ -3,7 +3,7 @@
 import { AnimatedGradientText } from "@/components/magicui/animated-gradient-text"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs"
+import { SignInButton, SignUpButton, useUser } from "@/lib/auth-client"
 import { ArrowRight, Bot, CheckCircle, ChevronRight, Play, Sparkles } from "lucide-react"
 import Link from "next/link"
 

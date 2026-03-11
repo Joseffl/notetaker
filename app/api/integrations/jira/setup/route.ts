@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db"
 import { JiraAPI } from "@/lib/integrations/jira/jira"
 import { refreshJiraToken } from "@/lib/integrations/jira/refreshToken"
-import { auth } from "@clerk/nextjs/server"
+import { auth } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
 
 async function getValidToken(integration: any) {

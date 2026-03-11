@@ -1,5 +1,18 @@
-import { SignUp } from '@clerk/nextjs'
+import { SignUpButton } from "@/lib/auth-client";
+import { Button } from "@/components/ui/button";
 
 export default function Page() {
-    return <SignUp />
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-6">
+            <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-center">
+                <h1 className="text-2xl font-semibold text-foreground">Create your account</h1>
+                <p className="mt-2 text-sm text-muted-foreground">Sign up with Google to get started.</p>
+                <div className="mt-6">
+                    <SignUpButton>
+                        <Button className="w-full cursor-pointer">Continue with Google</Button>
+                    </SignUpButton>
+                </div>
+            </div>
+        </div>
+    );
 }

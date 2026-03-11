@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { createContext, ReactNode, useContext, useEffect, useState } from "react"
 
 interface PlanLimits {
@@ -28,10 +28,7 @@ interface UsageContextType {
 }
 
 const PLAN_LIMITS: Record<string, PlanLimits> = {
-    free: { meetings: 0, chatMessages: 0 },
-    starter: { meetings: 10, chatMessages: 30 },
-    pro: { meetings: 30, chatMessages: 100 },
-    premium: { meetings: -1, chatMessages: -1 }
+    personal: { meetings: -1, chatMessages: -1 },
 }
 
 const UsageContext = createContext<UsageContextType | undefined>(undefined)
@@ -41,19 +38,9 @@ export function UsageProvider({ children }: { children: ReactNode }) {
     const [usage, setUsage] = useState<UsageData | null>(null)
     const [loading, setLoading] = useState(true)
 
-    const limits = usage ? PLAN_LIMITS[usage.currentPlan] || PLAN_LIMITS.free : PLAN_LIMITS.free
-
-    const canChat = usage ? (
-        usage.currentPlan !== 'free' &&
-        usage.subscriptionStatus === 'active' &&
-        (limits.chatMessages === -1 || usage.chatMessagesToday < limits.chatMessages)
-    ) : false
-
-    const canScheduleMeeting = usage ? (
-        usage.currentPlan !== 'free' &&
-        usage.subscriptionStatus === 'active' &&
-        (limits.meetings === -1 || usage.meetingsThisMonth < limits.meetings)
-    ) : false
+    const limits = PLAN_LIMITS.personal
+    const canChat = Boolean(userId)
+    const canScheduleMeeting = Boolean(userId)
 
     const fetchUsage = async () => {
         if (!userId) return

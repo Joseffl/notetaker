@@ -1,5 +1,5 @@
 import { useChatCore } from "@/app/hooks/chat/useChatCore"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 

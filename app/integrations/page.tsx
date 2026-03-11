@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { useIntegrations } from './hooks/useIntegrations'
-import SetupForm from './components/SetupForm'
 import IntegrationCard from './components/IntegrationCard'
 
 function Integrations() {
@@ -10,17 +9,8 @@ function Integrations() {
     const {
         integrations,
         loading,
-        setupMode,
-        setSetupMode,
-        setupData,
-        setSetupData,
-        setupLoading,
-        setSetupLoading,
-        fetchIntegrations,
-        fetchSetupData,
         handleConnect,
-        handleDisconnect,
-        handleSetupSubmit
+        handleDisconnect
     } = useIntegrations()
 
     if (loading) {
@@ -40,34 +30,9 @@ function Integrations() {
                     <h1 className='text-2xl font-bold text-foreground mb-2'>Integrations</h1>
 
                     <p className='text-muted-foreground'>
-                        Connect your favourite tools to automatically add action items from meetings
-
+                        Connect Google Calendar to sync upcoming Google Meet meetings automatically.
                     </p>
                 </div>
-
-                {setupMode && (
-                    <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
-                        <div className='bg-card rounded-lg p-6 border border-border max-w-md w-full mx-4'>
-                            <h2 className='text-lg font-semibold text-foreground mb-4'>
-                                Setup {setupMode.charAt(0).toUpperCase() + setupMode.slice(1)}
-                            </h2>
-
-                            <SetupForm
-                                platform={setupMode}
-                                data={setupData}
-                                onSubmit={handleSetupSubmit}
-                                onCancel={() => {
-                                    setSetupMode(null)
-                                    setSetupData(null)
-                                    window.history.replaceState({}, '', '/integrations')
-                                }}
-                                loading={setupLoading}
-                            />
-
-                        </div>
-
-                    </div>
-                )}
 
                 <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
                     {integrations.map((integration) => (
@@ -76,22 +41,18 @@ function Integrations() {
                             integration={integration}
                             onConnect={handleConnect}
                             onDisconnect={handleDisconnect}
-                            onSetup={(platform) => {
-                                setSetupMode(platform)
-                                fetchSetupData(platform)
-                            }}
+                            onSetup={() => { }}
                         />
                     ))}
                 </div>
 
                 <div className='mt-8 bg-card rounded-lg p-6 border border-border'>
-                    <h3 className='font-semibold text-foreground mb-2'>How it wokrs </h3>
+                    <h3 className='font-semibold text-foreground mb-2'>How it works</h3>
 
                     <ol className='text-sm text-muted-foreground space-y-2'>
-                        <li>1. Connect your preffered tools above</li>
-                        <li>2. Choose where to send action items during setup</li>
-                        <li>3. In meetings, hover over action items and click "Add to"</li>
-                        <li>4. Select which tool(s) to add the task to from the dropdown</li>
+                        <li>1. Connect your Google Calendar account above.</li>
+                        <li>2. Upcoming Google Meet events appear on your Home dashboard.</li>
+                        <li>3. The scheduler can auto-join enabled meetings and generate notes.</li>
 
                     </ol>
 

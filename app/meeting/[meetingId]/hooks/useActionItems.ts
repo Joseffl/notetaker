@@ -1,4 +1,4 @@
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { useEffect, useState } from "react"
 
 export interface ActionItem {

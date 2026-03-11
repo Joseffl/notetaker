@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { TrelloAPI } from "@/lib/integrations/trello/trello";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {

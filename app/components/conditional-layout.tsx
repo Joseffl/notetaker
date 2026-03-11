@@ -1,7 +1,7 @@
 'use client'
 
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth-client";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "./app-sidebar";
 

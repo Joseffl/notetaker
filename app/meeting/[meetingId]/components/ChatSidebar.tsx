@@ -93,14 +93,6 @@ function ChatSidebar({
                     </div>
                 )}
 
-                {!canChat && (
-                    <div className='text-center p-4'>
-                        <p className='text-xs text-muted-foreground mb-2'> Daily chat limit reached</p>
-                        <a href="/pricing" className='text-xs text-primary underline'>
-                            Upgrade to continute chatting
-                        </a>
-                    </div>
-                )}
             </div>
 
             <div className='p-4 border-t border-border'>

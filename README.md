@@ -30,7 +30,7 @@ Any contributions are very much appreciated. Take a feature from the above list 
 
 # Overview
 
-Hi 🐶, In this project, you'll build MeetingBot, a comprehensive open-source meeting intelligence platform that automatically joins your video calls on Zoom, Google Meet, and Microsoft Teams to provide AI-powered transcription, summaries, and actionable insights. The platform features real-time calendar sync that automatically schedules bots for upcoming meetings, while giving you full control over which meetings to record. You'll learn how to build a SaaS with AI integrations using OpenAI and Pinecone for conversational meeting intelligence, where users can chat with individual meetings or query across their entire meeting history. The application includes Stripe subscription management, Slack bot integration (we will be building a slack bot from scratch), project management tool synchronization (Asana, Jira, Trello), and features like custom bot personalization and automated action item detection. We'll use technologies such as Next.js 15, TypeScript, Tailwind CSS 4, Shadcn UI, Clerk auth, Prisma ORM, AWS Lambda, AWS S3, OpenAI API, Pinecone vector database, Stripe, Slack Bolt framework, etc and more to create a complete alternative to commercial solutions like Fireflies.ai and Otter.ai.
+Hi 🐶, In this project, you'll build MeetingBot, a comprehensive open-source meeting intelligence platform that automatically joins your video calls on Zoom, Google Meet, and Microsoft Teams to provide AI-powered transcription, summaries, and actionable insights. The platform features real-time calendar sync that automatically schedules bots for upcoming meetings, while giving you full control over which meetings to record. You'll learn how to build a SaaS with AI integrations using Hugging Face and Pinecone for conversational meeting intelligence, where users can chat with individual meetings or query across their entire meeting history. The application includes Stripe subscription management, Slack bot integration (we will be building a slack bot from scratch), project management tool synchronization (Asana, Jira, Trello), and features like custom bot personalization and automated action item detection. We'll use technologies such as Next.js 15, TypeScript, Tailwind CSS 4, Shadcn UI, Clerk auth, Prisma ORM, AWS Lambda, AWS S3, Hugging Face Inference API, Pinecone vector database, Stripe, Slack Bolt framework, etc and more to create a complete alternative to commercial solutions like Fireflies.ai and Otter.ai.
 
 # Features
 
@@ -38,7 +38,7 @@ Hi 🐶, In this project, you'll build MeetingBot, a comprehensive open-source m
 
 - 📝 Meeting transcription with speaker identification and diarization
 
-- 🧠 AI-generated meeting summaries and action items using OpenAI
+- 🧠 AI-generated meeting summaries and action items using Hugging Face
 
 - 📅 Real-time calendar sync with Google Calendar
 
@@ -76,7 +76,7 @@ Hi 🐶, In this project, you'll build MeetingBot, a comprehensive open-source m
 
 - 🎯 Custom bot personalization with name changes and profile image uploads
 
-- 📧 Post-meeting automated email notifications using Resend integration
+- 📧 Post-meeting automated email notifications using Gmail app passwords
 
 - 🗄️ Efficient database management with Prisma ORM
 
@@ -97,11 +97,11 @@ Hi 🐶, In this project, you'll build MeetingBot, a comprehensive open-source m
 - AWS Lambda
 - AWS S3
 - AWS EventBridge Scheduler
-- OpenAI API
+- Hugging Face Inference API
 - Pinecone Vector Database
 - Stripe
 - Slack Bolt Framework
-- Resend
+- Nodemailer
 - Svix
 - React H5 Audio Player
 - Sonner

@@ -1,8 +1,21 @@
-import OpenAI from 'openai'
+import { generateStructuredJson } from "./huggingface";
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY!
-})
+function parseJsonPayload(payload: string) {
+    const trimmed = payload.trim()
+
+    try {
+        return JSON.parse(trimmed)
+    } catch {
+        const jsonStart = trimmed.indexOf('{')
+        const jsonEnd = trimmed.lastIndexOf('}')
+
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+            return JSON.parse(trimmed.slice(jsonStart, jsonEnd + 1))
+        }
+
+        throw new Error('No valid JSON found in model response')
+    }
+}
 
 export async function processMeetingTranscript(transcript: any) {
     try {
@@ -23,45 +36,28 @@ export async function processMeetingTranscript(transcript: any) {
         }
 
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-                {
-                    role: "system",
-                    content: `You are an AI assistant that analyzes meeting transcripts and provides concise summaries and action items.
+        const response = await generateStructuredJson(
+            `You analyze meeting transcripts and return strict JSON.
 
-                    Please analyze the meeting transcript and provide:
-                    1. A clear, concise summary (2-3 sentences) of the main discussion points and decisions
-                    2. A list of specific action items mentioned in the meeting
+Return this exact shape:
+{
+  "summary": "2-3 sentence summary",
+  "actionItems": ["action item 1", "action item 2"]
+}
 
-                    Format your response as JSON:
-                    {
-                        "summary": "Your summary here",
-                        "actionItems": [
-                            "Action item description 1",
-                            "Action item description 2"
-                        ]
-                    }
-
-                    Return only the action item text as strings.
-                    If no clear action items are mentioned, return an empty array for actionItems.`
-                },
-                {
-                    role: "user",
-                    content: `Please analyze this meeting transcript:\n\n${transcriptText}`
-                }
-            ],
-            temperature: 0.3,
-            max_tokens: 1000
-        })
-
-        const response = completion.choices[0].message.content
+Rules:
+- Return valid JSON only.
+- actionItems must be an array of strings.
+- If there are no clear action items, return an empty array.
+- Do not wrap the JSON in markdown fences.`,
+            `Analyze this meeting transcript:\n\n${transcriptText}`
+        )
 
         if (!response) {
             throw new Error('No response from chatgpt')
         }
 
-        const parsed = JSON.parse(response)
+        const parsed = parseJsonPayload(response)
 
         const actionItems = Array.isArray(parsed.actionItems)
             ? parsed.actionItems.map((text: string, index: number) => ({

@@ -18,26 +18,16 @@ function ChatInput({
     isLoading
 }: ChatInputProps) {
 
-    const { canChat, usage, limits } = useUsage()
+    const { canChat } = useUsage()
     return (
         <div className='p-6'>
-            {!canChat && usage && (
-                <div className='max-w-4xl mx-auto mb-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg'>
-                    <p className='text-sm text-orange-600 dark:text-orange-400 text-center'>
-                        Daily limit reached ({usage.chatMessagesToday}/{limits.chatMessages} messages used).
-                        <a href="/pricing" className='underline ml-1'>Upgrade your plan</a> to continue chatting.
-
-                    </p>
-                </div>
-            )}
-
             <div className='flex gap-3 max-w-4xl mx-auto'>
                 <Input
                     type='text'
                     value={chatInput}
                     onChange={e => onInputChange(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && onSendMessage()}
-                    placeholder={canChat ? 'Ask about any meeting - deadlines, decisions, action items, participants...' : 'Daily chat limit reached - upgrade to continue'}
+                    placeholder={canChat ? 'Ask about any meeting - deadlines, decisions, action items, participants...' : 'Sign in to start chatting'}
                     className='flex-1'
                     disabled={isLoading || !canChat}
                 />

@@ -3,7 +3,7 @@ import { AsanaAPI } from "@/lib/integrations/asana/asana";
 import { JiraAPI } from "@/lib/integrations/jira/jira";
 import { refreshTokenIfNeeded } from "@/lib/integrations/refreshTokenIfNeeded";
 import { TrelloAPI } from "@/lib/integrations/trello/trello";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { channel } from "diagnostics_channel";
 import { NextRequest, NextResponse } from "next/server";
 

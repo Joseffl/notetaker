@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { SignOutButton, useAuth, useUser } from '@clerk/nextjs'
+import { SignOutButton, useAuth, useUser } from '@/lib/auth-client'
 import { Bot, LogOut, Save, Upload, User } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 

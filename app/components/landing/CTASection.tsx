@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { SignUpButton, useUser } from '@clerk/nextjs'
+import { SignUpButton, useUser } from '@/lib/auth-client'
 import { ArrowRight, Star } from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
