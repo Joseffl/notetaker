@@ -1,5 +1,6 @@
 import { chatWithMeeting } from "@/lib/rag";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -9,6 +10,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Not logged in' }, { status: 401 })
     }
 
+    const user = await prisma.user.findUnique({
+        where: {
+            clerkId: userId
+        },
+        select: {
+            id: true
+        }
+    })
+
+    if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     const { meetingId, question } = await request.json()
 
     if (!meetingId || !question) {
@@ -16,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const response = await chatWithMeeting(userId, meetingId, question)
+        const response = await chatWithMeeting(user.id, meetingId, question)
 
         return NextResponse.json(response)
     } catch (error) {

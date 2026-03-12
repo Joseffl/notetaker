@@ -19,14 +19,12 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'not logged in' }, { status: 401 })
             }
 
-            targetUserId = clerkUserId
-        } else {
             const user = await prisma.user.findUnique({
                 where: {
-                    id: slackUserId
+                    clerkId: clerkUserId
                 },
                 select: {
-                    clerkId: true
+                    id: true
                 }
             })
 
@@ -34,7 +32,22 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'user not found' }, { status: 404 })
             }
 
-            targetUserId = user.clerkId
+            targetUserId = user.id
+        } else {
+            const user = await prisma.user.findUnique({
+                where: {
+                    id: slackUserId
+                },
+                select: {
+                    id: true
+                }
+            })
+
+            if (!user) {
+                return NextResponse.json({ error: 'user not found' }, { status: 404 })
+            }
+
+            targetUserId = user.id
         }
 
         const response = await chatWithAllMeetings(targetUserId, question)

@@ -10,6 +10,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Not logged in' }, { status: 401 })
     }
 
+    const user = await prisma.user.findUnique({
+        where: {
+            clerkId: userId
+        },
+        select: {
+            id: true
+        }
+    })
+
+    if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     const { meetingId, transcript, meetingTitle } = await request.json()
 
     if (!meetingId || !transcript) {
@@ -31,7 +44,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Meeting not found' }, { status: 404 })
         }
 
-        if (meeting.userId !== userId) {
+        if (meeting.userId !== user.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
         }
 
@@ -39,7 +52,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true, message: 'aldready processed' })
         }
 
-        await processTranscript(meetingId, userId, transcript, meetingTitle)
+        await processTranscript(meetingId, user.id, transcript, meetingTitle)
 
         await prisma.meeting.update({
             where: {
