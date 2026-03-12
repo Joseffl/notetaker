@@ -325,13 +325,15 @@ async function scheduleBotsForUpcomingMeetings() {
                 bot_name: meeting.user.botName || 'AI Noteetaker',
                 reserved: false,
                 recording_mode: 'speaker_view',
-                speech_to_text: { provider: "Default" },
+                speech_to_text: { provider: "Gladia" },
                 webhook_url: process.env.WEBHOOK_URL,
                 extra: {
                     meeting_id: meeting.id,
                     user_id: meeting.userId
                 }
             }
+
+            console.log(`using speech_to_text provider for ${meeting.id}:`, requestBody.speech_to_text)
 
             if (meeting.user.botImageUrl) {
                 requestBody.bot_image = meeting.user.botImageUrl
