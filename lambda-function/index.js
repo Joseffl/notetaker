@@ -4,6 +4,14 @@ const prisma = new PrismaClient()
 
 export const handler = async (event) => {
     try {
+        console.log('scheduler invocation started', {
+            invokedAt: new Date().toISOString(),
+            hasWebhookUrl: Boolean(process.env.WEBHOOK_URL),
+            hasMeetingBaasApiKey: Boolean(process.env.MEETING_BAAS_API_KEY),
+            hasGoogleClientId: Boolean(process.env.GOOGLE_CLIENT_ID),
+            hasGoogleClientSecret: Boolean(process.env.GOOGLE_CLIENT_SECRET)
+        })
+
         await syncAllUserCalendars()
 
         await scheduleBotsForUpcomingMeetings()
@@ -33,6 +41,8 @@ async function syncAllUserCalendars() {
         }
     })
 
+    console.log('calendar sync candidates loaded', { userCount: users.length })
+
     for (const user of users) {
         try {
             await syncUserCalendar(user)
@@ -44,6 +54,13 @@ async function syncAllUserCalendars() {
 
 async function syncUserCalendar(user) {
     try {
+        console.log('syncing calendar for user', {
+            userId: user.id,
+            hasAccessToken: Boolean(user.googleAccessToken),
+            hasRefreshToken: Boolean(user.googleRefreshToken),
+            tokenExpiry: user.googleTokenExpiry?.toISOString?.() || null
+        })
+
         let accessToken = user.googleAccessToken
 
         const now = new Date()
@@ -85,6 +102,10 @@ async function syncUserCalendar(user) {
         }
         const data = await response.json()
         const events = data.items || []
+        console.log('calendar events fetched', {
+            userId: user.id,
+            eventCount: events.length
+        })
         const existingEvents = await prisma.meeting.findMany({
             where: {
                 userId: user.id,
@@ -108,6 +129,12 @@ async function syncUserCalendar(user) {
         const deletedEvents = existingEvents.filter(
             dbEvent => !googleEventIds.has(dbEvent.calendarEventId)
         )
+
+        console.log('calendar sync diff', {
+            userId: user.id,
+            existingUpcomingCount: existingEvents.length,
+            deletedEventCount: deletedEvents.length
+        })
 
         if (deletedEvents.length > 0) {
             for (const deletedEvent of deletedEvents) {
@@ -224,6 +251,12 @@ async function handleDeletedEventFromDB(dbEvent) {
 async function processEvent(user, event) {
     const meetingUrl = event.hangoutLink || event.conferenceData?.entryPoints?.[0]?.uri
     if (!meetingUrl || !event.start?.dateTime) {
+        console.log('skipping calendar event without joinable meeting url', {
+            userId: user.id,
+            eventId: event.id,
+            hasMeetingUrl: Boolean(meetingUrl),
+            hasStartDateTime: Boolean(event.start?.dateTime)
+        })
         return
     }
 
@@ -272,9 +305,21 @@ async function processEvent(user, event) {
                 },
                 data: updateData
             })
+            console.log('meeting updated from calendar sync', {
+                userId: user.id,
+                eventId: event.id,
+                meetingId: exsistingMeeting.id,
+                changedFields: changes
+            })
         } else {
-            await prisma.meeting.create({
+            const createdMeeting = await prisma.meeting.create({
                 data: eventData
+            })
+            console.log('meeting created from calendar sync', {
+                userId: user.id,
+                eventId: event.id,
+                meetingId: createdMeeting.id,
+                startTime: createdMeeting.startTime.toISOString()
             })
         }
     } catch (error) {
@@ -289,8 +334,10 @@ async function scheduleBotsForUpcomingMeetings() {
     const upcomingMeetings = await prisma.meeting.findMany({
         where: {
             startTime: {
-                gte: now,
                 lte: fiveMinutesFromNow
+            },
+            endTime: {
+                gte: now
             },
             botScheduled: true,
             botSent: false,
@@ -304,11 +351,56 @@ async function scheduleBotsForUpcomingMeetings() {
         }
     })
 
+    console.log('upcoming meetings ready for scheduling check', {
+        now: now.toISOString(),
+        lookaheadEnd: fiveMinutesFromNow.toISOString(),
+        schedulingRule: 'meeting has started or starts within 5 minutes, and has not ended yet',
+        meetingCount: upcomingMeetings.length
+    })
+
+    if (upcomingMeetings.length === 0) {
+        const nearestMeetings = await prisma.meeting.findMany({
+            where: {
+                botScheduled: true,
+                botSent: false,
+                meetingUrl: {
+                    not: null
+                }
+            },
+            orderBy: {
+                startTime: 'asc'
+            },
+            take: 5,
+            select: {
+                id: true,
+                title: true,
+                startTime: true,
+                endTime: true,
+                meetingUrl: true,
+                meetingEnded: true
+            }
+        })
+
+        console.log('nearest scheduled meetings for debugging', nearestMeetings.map(meeting => ({
+            meetingId: meeting.id,
+            title: meeting.title,
+            startTime: meeting.startTime.toISOString(),
+            endTime: meeting.endTime.toISOString(),
+            meetingEnded: meeting.meetingEnded,
+            hasMeetingUrl: Boolean(meeting.meetingUrl)
+        })))
+    }
+
     for (const meeting of upcomingMeetings) {
         try {
             const canSchedule = await canUserScheduleMeeting(meeting.user)
 
             if (!canSchedule.allowed) {
+                console.log('skipping bot scheduling because user is not eligible', {
+                    meetingId: meeting.id,
+                    userId: meeting.userId,
+                    reason: canSchedule.reason
+                })
                 await prisma.meeting.update({
                     where: {
                         id: meeting.id
@@ -353,6 +445,11 @@ async function scheduleBotsForUpcomingMeetings() {
             }
 
             const data = await response.json()
+            console.log('meeting bot created successfully', {
+                meetingId: meeting.id,
+                botId: data.bot_id,
+                startTime: meeting.startTime.toISOString()
+            })
 
             await prisma.meeting.update({
                 where: {
