@@ -1,9 +1,12 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { CalendarEvent } from '../hooks/useMeetings'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import { Clock } from 'lucide-react'
 import { format } from 'date-fns'
+import { toast } from 'sonner'
 
 interface UpcomingMeetingsProps {
     upcomingEvents: CalendarEvent[]
@@ -12,9 +15,12 @@ interface UpcomingMeetingsProps {
     loading: boolean
     initialLoading: boolean
     botToggles: { [key: string]: boolean }
+    botJoinStates: Record<string, { status: 'disabled' | 'scheduled' | 'joining' | 'joined' | 'failed'; message?: string }>
+    liveJoinLoading: boolean
     onRefresh: () => void
     onToggleBot: (eventId: string) => void
     onConnectCalendar: () => void
+    onJoinLiveMeeting: (meetingUrl: string) => Promise<void>
 }
 
 function UpcomingMeetings({
@@ -24,15 +30,72 @@ function UpcomingMeetings({
     loading,
     initialLoading,
     botToggles,
+    botJoinStates,
+    liveJoinLoading,
     onRefresh,
     onToggleBot,
-    onConnectCalendar
+    onConnectCalendar,
+    onJoinLiveMeeting
 }: UpcomingMeetingsProps) {
+    const [meetingUrl, setMeetingUrl] = useState('')
+
+    const getBadgeVariant = (status: 'disabled' | 'scheduled' | 'joining' | 'joined' | 'failed') => {
+        if (status === 'joined') return 'default'
+        if (status === 'failed') return 'destructive'
+        return 'secondary'
+    }
+
+    const getBadgeLabel = (status: 'disabled' | 'scheduled' | 'joining' | 'joined' | 'failed') => {
+        if (status === 'disabled') return 'Bot Off'
+        if (status === 'scheduled') return 'Scheduled'
+        if (status === 'joining') return 'Joining'
+        if (status === 'joined') return 'Join Sent'
+        return 'Join Failed'
+    }
+
+    const handleJoinLiveMeeting = async () => {
+        const trimmedMeetingUrl = meetingUrl.trim()
+        if (!trimmedMeetingUrl) {
+            toast.error('Paste a Google Meet link first')
+            return
+        }
+
+        try {
+            await onJoinLiveMeeting(trimmedMeetingUrl)
+            setMeetingUrl('')
+            toast.success('Notetaker is joining the live meeting')
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to join live meeting')
+        }
+    }
+
     return (
         <div>
             <div className='flex justify-between items-center mb-6'>
                 <h2 className='text-xl font-bold text-foreground'>Upcoming</h2>
                 <span className='text-sm text-muted-foreground'>({upcomingEvents.length})</span>
+            </div>
+
+            <div className='bg-card rounded-lg p-4 border border-border mb-6'>
+                <h3 className='font-semibold text-foreground text-sm mb-2'>Join Live Meeting</h3>
+                <p className='text-xs text-muted-foreground mb-3'>
+                    Paste a Google Meet link and send the notetaker in right away.
+                </p>
+                <div className='space-y-2'>
+                    <Input
+                        value={meetingUrl}
+                        onChange={(event) => setMeetingUrl(event.target.value)}
+                        placeholder='https://meet.google.com/abc-defg-hij'
+                        disabled={liveJoinLoading}
+                    />
+                    <Button
+                        onClick={handleJoinLiveMeeting}
+                        disabled={liveJoinLoading}
+                        className='w-full cursor-pointer'
+                    >
+                        {liveJoinLoading ? 'Joining...' : 'Join Live Meeting'}
+                    </Button>
+                </div>
             </div>
 
             {error && (
@@ -88,6 +151,14 @@ function UpcomingMeetings({
                     </Button>
                     {upcomingEvents.map((event) => (
                         <div key={event.id} className='bg-card rounded-lg p-3 border border-border hover:shadow-md transition-shadow relative'>
+                            <div className='mb-2 pr-16'>
+                                <Badge variant={getBadgeVariant(botJoinStates[event.id]?.status || 'scheduled')}>
+                                    {getBadgeLabel(botJoinStates[event.id]?.status || 'scheduled')}
+                                </Badge>
+                                <p className='mt-1 text-[11px] text-muted-foreground'>
+                                    {botJoinStates[event.id]?.message || 'Scheduled'}
+                                </p>
+                            </div>
                             <div className='absolute top-3 right-3'>
                                 <Switch
                                     checked={!!botToggles[event.id]}

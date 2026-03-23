@@ -37,7 +37,10 @@ export async function GET() {
             hangoutLink: meeting.meetingUrl,
             conferenceData: meeting.meetingUrl ? { entryPoints: [{ uri: meeting.meetingUrl }] } : null,
             botScheduled: meeting.botScheduled,
-            meetingId: meeting.id
+            meetingId: meeting.id,
+            botSent: meeting.botSent,
+            botId: meeting.botId,
+            botJoinedAt: meeting.botJoinedAt?.toISOString() || null
         }))
 
         return NextResponse.json({

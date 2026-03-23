@@ -17,11 +17,14 @@ function Home() {
         connected,
         error,
         botToggles,
+        botJoinStates,
         initialLoading,
+        liveJoinLoading,
         fetchUpcomingEvents,
         fetchPastMeetings,
         toggleBot,
         directOAuth,
+        joinLiveMeeting,
         getAttendeeList,
         getInitials
     } = useMeetings()
@@ -30,6 +33,14 @@ function Home() {
     const handleMeetingClick = (meetingId: string) => {
         router.push(`/meeting/${meetingId}`)
     }
+
+    const handleJoinLiveMeeting = async (meetingUrl: string) => {
+        const result = await joinLiveMeeting(meetingUrl)
+        if (result?.meetingId) {
+            router.push(`/meeting/${result.meetingId}`)
+        }
+    }
+
     if (!userId) {
         return (
             <div className='flex items-center justify-center h-screen'>
@@ -65,9 +76,12 @@ function Home() {
                             loading={loading}
                             initialLoading={initialLoading}
                             botToggles={botToggles}
+                            botJoinStates={botJoinStates}
+                            liveJoinLoading={liveJoinLoading}
                             onRefresh={fetchUpcomingEvents}
                             onToggleBot={toggleBot}
                             onConnectCalendar={directOAuth}
+                            onJoinLiveMeeting={handleJoinLiveMeeting}
                         />
                     </div>
                 </div>

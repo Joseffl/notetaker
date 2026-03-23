@@ -8,13 +8,24 @@ export interface CalendarEvent {
         dateTime?: string
         date?: string
     }
+    end?: {
+        dateTime?: string
+        date?: string
+    }
     attendees?: Array<{ email: string }>
     location?: string
     hangoutLink?: string
     conferenceData?: any
     botScheduled?: boolean
     meetingId?: string
+    botSent?: boolean
+    botId?: string | null
+    botJoinedAt?: string | null
 }
+
+type BotStatus = 'disabled' | 'scheduled' | 'joining' | 'joined' | 'failed'
+
+const BOT_JOIN_LOOKAHEAD_MS = 5 * 60 * 1000
 
 export interface PastMeeting {
     id: string
@@ -38,7 +49,9 @@ export function useMeetings() {
     const [connected, setConnected] = useState(false)
     const [error, setError] = useState<string>('')
     const [botToggles, setBotToggles] = useState<{ [key: string]: boolean }>({})
+    const [botJoinStates, setBotJoinStates] = useState<Record<string, { status: BotStatus; message?: string }>>({})
     const [initialLoading, setInitialLoading] = useState(true)
+    const [liveJoinLoading, setLiveJoinLoading] = useState(false)
 
 
     useEffect(() => {
@@ -47,6 +60,132 @@ export function useMeetings() {
             fetchPastMeetings()
         }
     }, [userId])
+
+    const shouldJoinMeetingNow = (event: CalendarEvent) => {
+        if (!event.meetingId || !event.botScheduled) {
+            return false
+        }
+
+        const startValue = event.start?.dateTime || event.start?.date
+        const endValue = event.end?.dateTime || event.end?.date
+
+        if (!startValue || !endValue) {
+            return false
+        }
+
+        const startTime = new Date(startValue)
+        const endTime = new Date(endValue)
+        const now = Date.now()
+
+        if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
+            return false
+        }
+
+        return startTime.getTime() <= now + BOT_JOIN_LOOKAHEAD_MS && endTime.getTime() >= now
+    }
+
+    const getDefaultBotState = (event: CalendarEvent): { status: BotStatus; message?: string } => {
+        if (!event.botScheduled) {
+            return {
+                status: 'disabled',
+                message: 'Bot off'
+            }
+        }
+
+        if (event.botSent) {
+            return {
+                status: 'joined',
+                message: event.botJoinedAt ? 'Join request sent' : 'Bot sent'
+            }
+        }
+
+        return {
+            status: 'scheduled',
+            message: shouldJoinMeetingNow(event) ? 'Ready to join' : 'Scheduled'
+        }
+    }
+
+    const syncBotJoinStates = (events: CalendarEvent[]) => {
+        setBotJoinStates(prev => {
+            const next: Record<string, { status: BotStatus; message?: string }> = {}
+
+            events.forEach(event => {
+                const eventKey = event.id
+                const existing = prev[eventKey]
+
+                if (existing?.status === 'joining' || existing?.status === 'failed') {
+                    next[eventKey] = existing
+                    return
+                }
+
+                next[eventKey] = getDefaultBotState(event)
+            })
+
+            return next
+        })
+    }
+
+    const joinMeetingBot = async (meetingId: string) => {
+        const event = upcomingEvents.find(item => item.meetingId === meetingId)
+        const eventKey = event?.id
+
+        if (eventKey) {
+            setBotJoinStates(prev => ({
+                ...prev,
+                [eventKey]: { status: 'joining', message: 'Sending bot...' }
+            }))
+        }
+
+        try {
+            const response = await fetch(`/api/meetings/${meetingId}/join-bot`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error || 'failed to trigger meeting bot join')
+            }
+
+            if (eventKey) {
+                setBotJoinStates(prev => ({
+                    ...prev,
+                    [eventKey]: {
+                        status: 'joined',
+                        message: result.alreadyJoined ? 'Already sent' : 'Join request sent'
+                    }
+                }))
+            }
+
+            return result
+        } catch (error) {
+            console.error('failed to trigger meeting bot join:', error)
+            if (eventKey) {
+                setBotJoinStates(prev => ({
+                    ...prev,
+                    [eventKey]: {
+                        status: 'failed',
+                        message: error instanceof Error ? error.message : 'Join failed'
+                    }
+                }))
+            }
+            throw error
+        }
+    }
+
+    const triggerBotsForReadyMeetings = async (events: CalendarEvent[]) => {
+        const joinableMeetings = events
+            .filter(shouldJoinMeetingNow)
+            .map(event => event.meetingId)
+            .filter((meetingId): meetingId is string => Boolean(meetingId))
+
+        if (joinableMeetings.length === 0) {
+            return
+        }
+
+        await Promise.allSettled(joinableMeetings.map(joinMeetingBot))
+    }
 
     const fetchUpcomingEvents = async () => {
         setLoading(true)
@@ -84,6 +223,8 @@ export function useMeetings() {
             })
 
             setBotToggles(toggles)
+            syncBotJoinStates(result.events as CalendarEvent[])
+            await triggerBotsForReadyMeetings(result.events as CalendarEvent[])
 
         } catch (error) {
             setError("failed to fetch calnedar events. please try agan")
@@ -129,6 +270,14 @@ export function useMeetings() {
                 [eventId]: !prev[eventId]
             }))
 
+            setBotJoinStates(prev => ({
+                ...prev,
+                [eventId]: {
+                    status: !botToggles[eventId] ? 'scheduled' : 'disabled',
+                    message: !botToggles[eventId] ? 'Scheduled' : 'Bot off'
+                }
+            }))
+
             const response = await fetch(`/api/meetings/${event.meetingId}/bot-toggle`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -141,6 +290,22 @@ export function useMeetings() {
                 setBotToggles(prev => ({
                     ...prev,
                     [eventId]: !prev[eventId]
+                }))
+                setBotJoinStates(prev => ({
+                    ...prev,
+                    [eventId]: getDefaultBotState(event)
+                }))
+                return
+            }
+
+            if (!botToggles[eventId] && event && shouldJoinMeetingNow({ ...event, botScheduled: true })) {
+                await joinMeetingBot(event.meetingId)
+            } else {
+                setBotJoinStates(prev => ({
+                    ...prev,
+                    [eventId]: !botToggles[eventId]
+                        ? { status: 'scheduled', message: shouldJoinMeetingNow({ ...event, botScheduled: true }) ? 'Ready to join' : 'Scheduled' }
+                        : { status: 'disabled', message: 'Bot off' }
                 }))
             }
         } catch {
@@ -158,6 +323,30 @@ export function useMeetings() {
         } catch {
             setError('Failed to start direct OAuth')
             setLoading(false)
+        }
+    }
+
+    const joinLiveMeeting = async (meetingUrl: string) => {
+        setLiveJoinLoading(true)
+
+        try {
+            const response = await fetch('/api/meetings/join-live', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ meetingUrl })
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error || 'failed to join live meeting')
+            }
+
+            await Promise.allSettled([fetchUpcomingEvents(), fetchPastMeetings()])
+
+            return result as { meetingId: string; botId?: string; alreadyJoined?: boolean }
+        } finally {
+            setLiveJoinLoading(false)
         }
     }
 
@@ -196,11 +385,14 @@ export function useMeetings() {
         connected,
         error,
         botToggles,
+        botJoinStates,
         initialLoading,
+        liveJoinLoading,
         fetchUpcomingEvents,
         fetchPastMeetings,
         toggleBot,
         directOAuth,
+        joinLiveMeeting,
         getAttendeeList,
         getInitials
     }
